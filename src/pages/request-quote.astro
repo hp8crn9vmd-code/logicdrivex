@@ -1,0 +1,97 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { offers } from "../data/offers";
+
+const params = new URL(Astro.request.url).searchParams;
+const selectedId = params.get("offer") ?? "";
+
+const validOffer = offers.find(o => o.id === selectedId);
+const defaultOffer = validOffer ? validOffer.id : "";
+
+const pageTitle = "Request a Quote — LogicDriveX";
+
+/**
+ * IMPORTANT:
+ * The Web3Forms key must come from an environment variable at build/run time.
+ * Do NOT hardcode secrets in the repository.
+ */
+const accessKey = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY;
+---
+<SiteLayout title={pageTitle} lang="en">
+  <main class="min-h-screen p-6">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-3xl font-bold">Request a Quote</h1>
+      <p class="mt-2 text-slate-600">
+        Select the offer, describe required customizations, and submit your pricing request.
+      </p>
+
+      <form
+        class="mt-8 space-y-6"
+        method="POST"
+        action="https://api.web3forms.com/submit"
+      >
+        <!-- Web3Forms -->
+        <input type="hidden" name="access_key" value={accessKey} />
+        <input type="hidden" name="redirect" value="https://hp8crn9vmd-code.github.io/logicdrivex/thanks/" />
+
+        <div>
+          <label class="block font-semibold">Selected offer</label>
+          <select name="selected_offer" required class="mt-2 w-full rounded border p-2">
+            <option value="">-- Select an offer --</option>
+            {offers.map(o => (
+              <option value={o.id} selected={o.id === defaultOffer}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold">
+            Required customizations <span class="text-red-600">*</span>
+          </label>
+          <textarea
+            name="requested_customizations"
+            required
+            rows="5"
+            class="mt-2 w-full rounded border p-2"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="block font-semibold">
+            Requested price (USD) <span class="text-red-600">*</span>
+          </label>
+          <input type="number" name="requested_price" required min="1"
+                 class="mt-2 w-full rounded border p-2" />
+        </div>
+
+        <div>
+          <label class="block font-semibold">Your proposed price (optional)</label>
+          <input type="number" name="client_proposed_price" min="1"
+                 class="mt-2 w-full rounded border p-2" />
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold">Name</label>
+            <input type="text" name="name" required
+                   class="mt-2 w-full rounded border p-2" />
+          </div>
+          <div>
+            <label class="block font-semibold">Email</label>
+            <input type="email" name="email" required
+                   class="mt-2 w-full rounded border p-2" />
+          </div>
+        </div>
+
+        <input type="checkbox" name="botcheck" class="hidden" style="display:none" />
+
+        <button type="submit"
+                class="rounded-xl bg-slate-900 text-white px-6 py-4 font-semibold">
+          Submit request
+        </button>
+      </form>
+    </div>
+  </main>
+</SiteLayout>

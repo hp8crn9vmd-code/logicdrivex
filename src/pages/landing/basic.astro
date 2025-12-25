@@ -1,0 +1,67 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { offers } from "../../data/offers";
+
+const offer = offers.find(o => o.id === "basic");
+if (!offer) {
+  throw new Error("Basic offer not found");
+}
+
+const pageTitle = `${offer.name} — LogicDriveX`;
+---
+<SiteLayout title={pageTitle} lang="en">
+  <main class="min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
+
+      <header class="border-b border-slate-200 pb-6">
+        <h1 class="text-3xl font-bold">{offer.name}</h1>
+        <p class="mt-2 text-slate-700">
+          This offer provides a clean, static landing setup with a clear scope and a real request-quote flow.
+        </p>
+      </header>
+
+      <section class="mt-8">
+        <h2 class="text-xl font-semibold">Technologies used</h2>
+        <ul class="mt-3 list-disc list-inside text-slate-700">
+          {offer.technologies.map(t => <li>{t}</li>)}
+        </ul>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="text-xl font-semibold">What you will receive</h2>
+        <ul class="mt-3 list-disc list-inside text-slate-700">
+          {offer.deliverables.map(d => <li>{d}</li>)}
+        </ul>
+      </section>
+
+      <section class="mt-10 grid md:grid-cols-2 gap-6">
+        <div class="rounded-xl border border-slate-200 p-4">
+          <h2 class="text-lg font-semibold">Included</h2>
+          <ul class="mt-3 list-disc list-inside text-slate-700">
+            {offer.includes.map(i => <li>{i}</li>)}
+          </ul>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 p-4">
+          <h2 class="text-lg font-semibold">Not included</h2>
+          <ul class="mt-3 list-disc list-inside text-slate-700">
+            {offer.excludes.map(e => <li>{e}</li>)}
+          </ul>
+        </div>
+      </section>
+
+      <section class="mt-12 border-t border-slate-200 pt-6">
+        <p class="text-slate-700">
+          If this scope matches your needs, you can request a price with specific customizations.
+        </p>
+        <a
+          href={`/request-quote?offer=${offer.id}`}
+          class="mt-4 inline-block rounded-xl bg-slate-900 text-white px-6 py-4 font-semibold"
+        >
+          Request a quote for this offer
+        </a>
+      </section>
+
+    </div>
+  </main>
+</SiteLayout>
