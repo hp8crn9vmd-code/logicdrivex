@@ -9,15 +9,15 @@ const id = "ldx-hero-motion";
 ---
 
 <div class="pointer-events-none absolute inset-0 overflow-hidden">
-  <canvas id={id} class="h-full w-full opacity-40"></canvas>
+  <canvas id={id} class="h-full w-full opacity-80"></canvas>
   <!-- soft overlay to keep text readable -->
-  <div class="absolute inset-0 bg-gradient-to-b from-white/75 via-white/35 to-slate-50/85"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-white/55 via-white/25 to-slate-50/75"></div>
 </div>
 
 <script type="module">
   import * as THREE from "three";
   import * as CANNON from "cannon-es";
-  import Matter from "matter-js";
+  import * as Matter from "matter-js";
 
   const canvas = document.getElementById("ldx-hero-motion");
   if (!canvas) throw new Error("Hero canvas not found");
@@ -97,7 +97,7 @@ const id = "ldx-hero-motion";
         ctx.beginPath();
         ctx.arc(0,0,b.circleRadius,0,Math.PI*2);
         ctx.fillStyle = fills[i % fills.length];
-        ctx.globalAlpha = 0.28; // very subtle
+        ctx.globalAlpha = 0.55; // very subtle
         ctx.fill();
         ctx.restore();
       }
@@ -251,20 +251,39 @@ const id = "ldx-hero-motion";
     };
   }
 
-  // Decide mode
+  // Decide mode (guarded)
   let stop = null;
 
-  if (!prefersReduced && hasWebGL()) {
-    stop = start3D();
-  } else {
-    stop = start2D();
+  function safeStart() {
+    try {
+      if (!prefersReduced && hasWebGL()) {
+        const s3 = start3D();
+        if (typeof s3 === "function") return s3;
+      }
+    } catch (e) {
+      // fall through to 2D
+      console.warn("3D start failed, falling back to 2D:", e);
+    }
+
+    try {
+      const s2 = start2D();
+      if (typeof s2 === "function") return s2;
+    } catch (e) {
+      console.warn("2D start failed:", e);
+    }
+
+    return null;
   }
+
+  stop = safeStart();
 
   // Stop animation when tab not visible (performance)
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && stop) { stop(); stop = null; }
     if (!document.hidden && !stop) {
-      if (!prefersReduced && hasWebGL()) stop = start3D();
+      stop = safeStart();
+    }
+  });
       else stop = start2D();
     }
   });
