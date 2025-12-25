@@ -1,2 +1,0 @@
-LogicDriveX step 36 completed: Fixed hero layering so 3D background is visible (z-index + translucent hero).
-Timestamp UTC: 2025-12-25T16:01:48.307076Z
