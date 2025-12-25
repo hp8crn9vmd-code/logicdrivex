@@ -9,7 +9,10 @@
   },
   "dependencies": {
     "@astrojs/tailwind": "^6.0.0",
-    "astro": "^5.0.0"
+    "astro": "^5.0.0",
+    "cannon-es": "^0.20.0",
+    "matter-js": "^0.20.0",
+    "three": "^0.182.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.0",

@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
+import HeroMotionBackground from "../components/HeroMotionBackground.astro";
 import { offers } from "../data/offers";
 
 const pageTitle = "LogicDriveX — Landing Offers";
@@ -38,7 +39,7 @@ const year = new Date().getFullYear();
 
         
         
-        <div class="grid gap-10 lg:grid-cols-2 lg:items-center">
+        <div class="relative z-10 grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
             <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
               Professional landing system with clear scope

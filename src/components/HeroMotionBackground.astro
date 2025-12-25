@@ -1,0 +1,271 @@
+---
+/**
+ * HeroMotionBackground:
+ * - tries 3D (three + cannon-es) if WebGL available and user doesn't prefer reduced motion.
+ * - falls back to 2D physics (matter-js) otherwise.
+ * Goal: always visible, elegant, and non-distracting.
+ */
+const id = "ldx-hero-motion";
+---
+
+<div class="pointer-events-none absolute inset-0 overflow-hidden">
+  <canvas id={id} class="h-full w-full opacity-40"></canvas>
+  <!-- soft overlay to keep text readable -->
+  <div class="absolute inset-0 bg-gradient-to-b from-white/75 via-white/35 to-slate-50/85"></div>
+</div>
+
+<script type="module">
+  import * as THREE from "three";
+  import * as CANNON from "cannon-es";
+  import Matter from "matter-js";
+
+  const canvas = document.getElementById("ldx-hero-motion");
+  if (!canvas) throw new Error("Hero canvas not found");
+
+  const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+
+  function hasWebGL() {
+    try {
+      const c = document.createElement("canvas");
+      return !!(window.WebGLRenderingContext && (c.getContext("webgl") || c.getContext("experimental-webgl")));
+    } catch { return false; }
+  }
+
+  // ensure canvas has real pixel size
+  function sizeCanvas2D(ctx2d) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = Math.max(1, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+    ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height };
+  }
+
+  // ---------- 2D fallback (Matter.js) ----------
+  function start2D() {
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+
+    let { w, h } = sizeCanvas2D(ctx);
+
+    const Engine = Matter.Engine;
+    const World = Matter.World;
+    const Bodies = Matter.Bodies;
+    const Runner = Matter.Runner;
+
+    const engine = Engine.create();
+    engine.gravity.y = 0.9;
+
+    const thickness = 80;
+    const walls = [
+      Bodies.rectangle(w/2, -thickness/2, w, thickness, { isStatic: true }),
+      Bodies.rectangle(w/2, h+thickness/2, w, thickness, { isStatic: true }),
+      Bodies.rectangle(-thickness/2, h/2, thickness, h, { isStatic: true }),
+      Bodies.rectangle(w+thickness/2, h/2, thickness, h, { isStatic: true }),
+    ];
+    World.add(engine.world, walls);
+
+    const circles = [];
+    const count = Math.max(10, Math.min(18, Math.floor(w / 80)));
+    for (let i=0;i<count;i++){
+      const r = 10 + Math.random()*14;
+      const c = Bodies.circle(
+        40 + Math.random()*(w-80),
+        20 + Math.random()*80,
+        r,
+        { restitution: 0.85, friction: 0.05, frictionAir: 0.02 }
+      );
+      circles.push(c);
+    }
+    World.add(engine.world, circles);
+
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+
+    function draw() {
+      ({ w, h } = sizeCanvas2D(ctx));
+      ctx.clearRect(0,0,w,h);
+
+      // elegant palette
+      const fills = ["#0f172a", "#334155", "#64748b", "#94a3b8"];
+
+      for (let i=0;i<circles.length;i++){
+        const b = circles[i];
+        ctx.save();
+        ctx.translate(b.position.x, b.position.y);
+        ctx.rotate(b.angle);
+        ctx.beginPath();
+        ctx.arc(0,0,b.circleRadius,0,Math.PI*2);
+        ctx.fillStyle = fills[i % fills.length];
+        ctx.globalAlpha = 0.28; // very subtle
+        ctx.fill();
+        ctx.restore();
+      }
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    let raf = requestAnimationFrame(draw);
+
+    function onResize(){
+      const rect = canvas.getBoundingClientRect();
+      w = rect.width; h = rect.height;
+
+      // Update walls positions/sizes
+      Matter.Body.setPosition(walls[0], {x:w/2, y:-thickness/2});
+      Matter.Body.setVertices(walls[0], Matter.Vertices.fromPath(`0 0 ${w} 0 ${w} ${thickness} 0 ${thickness}`));
+
+      Matter.Body.setPosition(walls[1], {x:w/2, y:h+thickness/2});
+      Matter.Body.setVertices(walls[1], Matter.Vertices.fromPath(`0 0 ${w} 0 ${w} ${thickness} 0 ${thickness}`));
+
+      Matter.Body.setPosition(walls[2], {x:-thickness/2, y:h/2});
+      Matter.Body.setVertices(walls[2], Matter.Vertices.fromPath(`0 0 ${thickness} 0 ${thickness} ${h} 0 ${h}`));
+
+      Matter.Body.setPosition(walls[3], {x:w+thickness/2, y:h/2});
+      Matter.Body.setVertices(walls[3], Matter.Vertices.fromPath(`0 0 ${thickness} 0 ${thickness} ${h} 0 ${h}`));
+    }
+
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(raf);
+      Runner.stop(runner);
+      World.clear(engine.world, false);
+      Engine.clear(engine);
+    };
+  }
+
+  // ---------- 3D (Three.js + cannon-es) ----------
+  function start3D() {
+    // renderer
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(0, 0, 12);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(6, 9, 7);
+    scene.add(dir);
+
+    const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -5.5, 0) });
+    world.allowSleep = true;
+
+    const mat = new CANNON.Material("m");
+    world.defaultContactMaterial = new CANNON.ContactMaterial(mat, mat, {
+      friction: 0.2,
+      restitution: 0.85
+    });
+
+    // bounds
+    const halfX=7, halfY=4, halfZ=3;
+    function addPlane(normal, constant){
+      const shape = new CANNON.Plane();
+      const body = new CANNON.Body({ mass:0, material:mat, shape });
+      const q = new CANNON.Quaternion();
+      q.setFromVectors(new CANNON.Vec3(0,0,1), normal);
+      body.quaternion.copy(q);
+      body.position.copy(normal.scale(constant));
+      world.addBody(body);
+    }
+    addPlane(new CANNON.Vec3( 1,0,0), halfX);
+    addPlane(new CANNON.Vec3(-1,0,0), halfX);
+    addPlane(new CANNON.Vec3(0, 1,0), halfY);
+    addPlane(new CANNON.Vec3(0,-1,0), halfY);
+    addPlane(new CANNON.Vec3(0,0, 1), halfZ);
+    addPlane(new CANNON.Vec3(0,0,-1), halfZ);
+
+    const colors = [0x0f172a,0x334155,0x64748b,0x94a3b8];
+    const geo = new THREE.SphereGeometry(0.35, 20, 20);
+
+    const items = [];
+    const count = 14;
+    for (let i=0;i<count;i++){
+      const mesh = new THREE.Mesh(
+        geo,
+        new THREE.MeshStandardMaterial({ color: colors[i%colors.length], roughness:0.35, metalness:0.08 })
+      );
+      scene.add(mesh);
+
+      const body = new CANNON.Body({
+        mass:1,
+        material:mat,
+        shape:new CANNON.Sphere(0.35),
+        linearDamping:0.02,
+        angularDamping:0.12
+      });
+      body.position.set(
+        (Math.random()*2-1)*(halfX-1),
+        (Math.random()*2-1)*(halfY-1)+2,
+        (Math.random()*2-1)*(halfZ-0.5)
+      );
+      body.velocity.set((Math.random()*2-1)*1.0, (Math.random()*2-1)*1.0, (Math.random()*2-1)*0.5);
+      world.addBody(body);
+
+      items.push({ mesh, body });
+    }
+
+    function resize(){
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      renderer.setSize(w, h, false);
+      camera.aspect = w/h;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    let t=0;
+    let last=performance.now();
+    let raf=0;
+
+    function tick(now){
+      const dt = Math.min(0.033, (now-last)/1000);
+      last=now;
+
+      world.step(1/60, dt, 3);
+
+      for (const it of items){
+        it.mesh.position.set(it.body.position.x, it.body.position.y, it.body.position.z);
+        it.mesh.quaternion.set(it.body.quaternion.x, it.body.quaternion.y, it.body.quaternion.z, it.body.quaternion.w);
+      }
+
+      t+=dt;
+      camera.position.x = Math.sin(t*0.22)*0.35;
+      camera.position.y = Math.cos(t*0.18)*0.18;
+      camera.lookAt(0,0,0);
+
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(raf);
+      renderer.dispose();
+    };
+  }
+
+  // Decide mode
+  let stop = null;
+
+  if (!prefersReduced && hasWebGL()) {
+    stop = start3D();
+  } else {
+    stop = start2D();
+  }
+
+  // Stop animation when tab not visible (performance)
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && stop) { stop(); stop = null; }
+    if (!document.hidden && !stop) {
+      if (!prefersReduced && hasWebGL()) stop = start3D();
+      else stop = start2D();
+    }
+  });
+</script>
