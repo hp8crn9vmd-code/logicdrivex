@@ -9,9 +9,9 @@ const id = "ldx-hero-motion";
 ---
 
 <div class="pointer-events-none absolute inset-0 overflow-hidden">
-  <canvas id={id} class="h-full w-full opacity-80"></canvas>
+  <canvas id={id} class="h-full w-full opacity-100"></canvas>
   <!-- soft overlay to keep text readable -->
-  <div class="absolute inset-0 bg-gradient-to-b from-white/55 via-white/25 to-slate-50/75"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/40 to-slate-950/65"></div>
 </div>
 
 <script type="module">
@@ -68,7 +68,7 @@ const id = "ldx-hero-motion";
     const circles = [];
     const count = Math.max(10, Math.min(18, Math.floor(w / 80)));
     for (let i=0;i<count;i++){
-      const r = 10 + Math.random()*14;
+      const r = 14 + Math.random()*18;
       const c = Bodies.circle(
         40 + Math.random()*(w-80),
         20 + Math.random()*80,
@@ -87,7 +87,7 @@ const id = "ldx-hero-motion";
       ctx.clearRect(0,0,w,h);
 
       // elegant palette
-      const fills = ["#0f172a", "#334155", "#64748b", "#94a3b8"];
+      const fills = ["#38bdf8", "#a78bfa", "#22c55e", "#f59e0b"];
 
       for (let i=0;i<circles.length;i++){
         const b = circles[i];
@@ -97,7 +97,7 @@ const id = "ldx-hero-motion";
         ctx.beginPath();
         ctx.arc(0,0,b.circleRadius,0,Math.PI*2);
         ctx.fillStyle = fills[i % fills.length];
-        ctx.globalAlpha = 0.55; // very subtle
+        ctx.globalAlpha = 0.85; // very subtle
         ctx.fill();
         ctx.restore();
       }
@@ -178,22 +178,22 @@ const id = "ldx-hero-motion";
     addPlane(new CANNON.Vec3(0,0, 1), halfZ);
     addPlane(new CANNON.Vec3(0,0,-1), halfZ);
 
-    const colors = [0x0f172a,0x334155,0x64748b,0x94a3b8];
-    const geo = new THREE.SphereGeometry(0.35, 20, 20);
+    const colors = [0x38bdf8,0xa78bfa,0x22c55e,0xf59e0b];
+    const geo = new THREE.SphereGeometry(0.55, 24, 24);
 
     const items = [];
     const count = 14;
     for (let i=0;i<count;i++){
       const mesh = new THREE.Mesh(
         geo,
-        new THREE.MeshStandardMaterial({ color: colors[i%colors.length], roughness:0.35, metalness:0.08 })
+        new THREE.MeshStandardMaterial({ color: colors[i%colors.length], roughness:0.25, metalness:0.12, emissive: colors[i%colors.length], emissiveIntensity: 0.25 })
       );
       scene.add(mesh);
 
       const body = new CANNON.Body({
         mass:1,
         material:mat,
-        shape:new CANNON.Sphere(0.35),
+        shape:new CANNON.Sphere(0.55),
         linearDamping:0.02,
         angularDamping:0.12
       });
@@ -262,14 +262,14 @@ const id = "ldx-hero-motion";
       }
     } catch (e) {
       // fall through to 2D
-      console.warn("3D start failed, falling back to 2D:", e);
+      
     }
 
     try {
       const s2 = start2D();
       if (typeof s2 === "function") return s2;
     } catch (e) {
-      console.warn("2D start failed:", e);
+      
     }
 
     return null;
