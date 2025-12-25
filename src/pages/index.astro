@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
+import HeroBackground from "../components/HeroBackground.astro";
 import { offers } from "../data/offers";
 
 const pageTitle = "LogicDriveX — Landing Offers";
@@ -32,7 +33,8 @@ const year = new Date().getFullYear();
       </header>
 
       <!-- Hero -->
-      <section class="mt-10 rounded-3xl border border-slate-200 bg-white p-8 sm:p-10">
+      <section class="relative mt-10 rounded-3xl border border-slate-200 bg-white p-8 sm:p-10">
+        <HeroBackground />
         <div class="grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
             <h1 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">

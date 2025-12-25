@@ -1,0 +1,170 @@
+---
+/**
+ * Real 3D animated background with a real physics engine:
+ * - three (rendering)
+ * - cannon-es (physics)
+ *
+ * No fake assets. No screenshots. Pure canvas.
+ */
+const canvasId = "ldx-hero-bg";
+---
+
+<div class="absolute inset-0 -z-10 overflow-hidden rounded-3xl">
+  <canvas id={canvasId} class="h-full w-full"></canvas>
+  <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/70 via-white/30 to-slate-50/80"></div>
+</div>
+
+<script type="module">
+  import * as THREE from "three";
+  import * as CANNON from "cannon-es";
+
+  const canvas = document.getElementById("ldx-hero-bg");
+  if (!canvas) throw new Error("Hero background canvas not found");
+
+  // Renderer (transparent, so gradient overlay can blend)
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  // Scene / camera
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 0, 12);
+
+  // Lights
+  const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+  scene.add(ambient);
+
+  const key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(5, 8, 6);
+  scene.add(key);
+
+  // Physics world
+  const world = new CANNON.World({
+    gravity: new CANNON.Vec3(0, -6.0, 0)
+  });
+  world.allowSleep = true;
+
+  // Materials (physics)
+  const mat = new CANNON.Material("mat");
+  const contact = new CANNON.ContactMaterial(mat, mat, {
+    friction: 0.2,
+    restitution: 0.85
+  });
+  world.defaultContactMaterial = contact;
+
+  // Bounds (invisible box)
+  const halfX = 7.0;
+  const halfY = 4.0;
+  const halfZ = 3.0;
+
+  function addPlane(normal, constant) {
+    const shape = new CANNON.Plane();
+    const body = new CANNON.Body({ mass: 0, material: mat, shape });
+    // plane equation: normal · x = constant
+    // cannon plane is z=0 with normal (0,0,1) by default; rotate to match.
+    const q = new CANNON.Quaternion();
+    q.setFromVectors(new CANNON.Vec3(0, 0, 1), normal);
+    body.quaternion.copy(q);
+    body.position.copy(normal.scale(constant));
+    world.addBody(body);
+  }
+
+  // +X, -X, +Y, -Y, +Z, -Z
+  addPlane(new CANNON.Vec3( 1, 0, 0), halfX);
+  addPlane(new CANNON.Vec3(-1, 0, 0), halfX);
+  addPlane(new CANNON.Vec3( 0, 1, 0), halfY);
+  addPlane(new CANNON.Vec3( 0,-1, 0), halfY);
+  addPlane(new CANNON.Vec3( 0, 0, 1), halfZ);
+  addPlane(new CANNON.Vec3( 0, 0,-1), halfZ);
+
+  // Visual material
+  const sphereGeo = new THREE.SphereGeometry(0.35, 24, 24);
+
+  function makeSphereMaterial(i) {
+    // Keep it elegant: neutral modern palette (no neon overload)
+    const colors = [0x0f172a, 0x334155, 0x64748b, 0x94a3b8];
+    return new THREE.MeshStandardMaterial({
+      color: colors[i % colors.length],
+      roughness: 0.25,
+      metalness: 0.15
+    });
+  }
+
+  const spheres = [];
+  const count = 18;
+
+  for (let i = 0; i < count; i++) {
+    // Three mesh
+    const mesh = new THREE.Mesh(sphereGeo, makeSphereMaterial(i));
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    scene.add(mesh);
+
+    // Cannon body
+    const radius = 0.35;
+    const shape = new CANNON.Sphere(radius);
+    const body = new CANNON.Body({
+      mass: 1.0,
+      material: mat,
+      shape,
+      linearDamping: 0.02,
+      angularDamping: 0.1
+    });
+
+    body.position.set(
+      (Math.random() * 2 - 1) * (halfX - 1.0),
+      (Math.random() * 2 - 1) * (halfY - 1.0) + 2.0,
+      (Math.random() * 2 - 1) * (halfZ - 0.5)
+    );
+
+    body.velocity.set(
+      (Math.random() * 2 - 1) * 1.2,
+      (Math.random() * 2 - 1) * 1.2,
+      (Math.random() * 2 - 1) * 0.6
+    );
+
+    world.addBody(body);
+    spheres.push({ mesh, body });
+  }
+
+  // Responsive sizing
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.floor(rect.width));
+    const h = Math.max(1, Math.floor(rect.height));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  // Subtle camera drift for life
+  let t = 0;
+
+  // Animation loop
+  let last = performance.now();
+  function tick(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+
+    // Physics step
+    world.step(1 / 60, dt, 3);
+
+    // Copy physics -> visuals
+    for (const s of spheres) {
+      s.mesh.position.set(s.body.position.x, s.body.position.y, s.body.position.z);
+      s.mesh.quaternion.set(s.body.quaternion.x, s.body.quaternion.y, s.body.quaternion.z, s.body.quaternion.w);
+    }
+
+    // Camera drift
+    t += dt;
+    camera.position.x = Math.sin(t * 0.25) * 0.35;
+    camera.position.y = Math.cos(t * 0.2) * 0.18;
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+</script>
