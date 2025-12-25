@@ -1,5 +1,6 @@
 ---
 import SiteLayout from "../layouts/SiteLayout.astro";
+import LogoMark from "../components/LogoMark.astro";
 import HeroMotionBackground from "../components/HeroMotionBackground.astro";
 import { offers } from "../data/offers";
 
@@ -17,7 +18,7 @@ const year = new Date().getFullYear();
         <div class="flex items-center gap-3">
           <div class="h-10 w-10 rounded-2xl bg-slate-900"></div>
           <div>
-            <p class="text-sm font-semibold text-slate-900">LogicDriveX</p>
+            <p class="text-sm font-semibold text-slate-900"><span class="inline-flex items-center gap-3"><LogoMark size={44} label="LogicDriveX" /><span>LogicDriveX</span></span></p>
             <p class="text-xs text-slate-300">Astro + Tailwind + TypeScript</p>
           </div>
         </div>

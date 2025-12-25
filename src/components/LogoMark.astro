@@ -1,0 +1,121 @@
+\
+---
+/**
+ * LogoMark: Animated brand mark for LogicDriveX.
+ * Mark: <\>
+ * - Pure SVG + CSS, no JS.
+ * - Accessible: aria-hidden (decorative) and title in parent text.
+ */
+const size = Astro.props.size ?? 40;
+const label = Astro.props.label ?? "LogicDriveX";
+---
+
+<span class="ldx-logo" style={`--s:${size}px`} aria-hidden="true" title={label}>
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 64 64"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    class="ldx-logo__svg"
+    role="img"
+  >
+    <!-- subtle frame -->
+    <rect x="6" y="6" width="52" height="52" rx="16" class="ldx-logo__frame" />
+
+    <!-- <  -->
+    <path d="M28 20 L16 32 L28 44" class="ldx-logo__mark ldx-logo__lt" />
+
+    <!-- \ -->
+    <path d="M26 18 L38 46" class="ldx-logo__mark ldx-logo__slash" />
+
+    <!-- > -->
+    <path d="M36 20 L48 32 L36 44" class="ldx-logo__mark ldx-logo__gt" />
+
+    <!-- glow dot -->
+    <circle cx="46" cy="18" r="3" class="ldx-logo__dot" />
+  </svg>
+</span>
+
+<style>
+  .ldx-logo{
+    width: var(--s);
+    height: var(--s);
+    display: inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius: 16px;
+    transform: translateZ(0);
+    filter: drop-shadow(0 10px 24px rgba(2,6,23,.18));
+  }
+
+  .ldx-logo__svg{
+    width: 100%;
+    height: 100%;
+  }
+
+  .ldx-logo__frame{
+    stroke: rgba(15,23,42,.14);
+    fill: rgba(255,255,255,.9);
+  }
+
+  /* Mark strokes */
+  .ldx-logo__mark{
+    stroke: rgba(15,23,42,.92);
+    stroke-width: 4.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+
+    /* draw animation */
+    stroke-dasharray: 120;
+    stroke-dashoffset: 120;
+    animation: ldx-draw 1.1s ease-out forwards;
+  }
+
+  .ldx-logo__slash{ animation-delay: .12s; }
+  .ldx-logo__gt{ animation-delay: .22s; }
+  .ldx-logo__lt{ animation-delay: 0s; }
+
+  .ldx-logo__dot{
+    fill: rgba(56,189,248,.95);
+    filter: drop-shadow(0 6px 12px rgba(56,189,248,.35));
+    opacity: .25;
+    transform-origin: 46px 18px;
+    animation: ldx-pulse 1.6s ease-in-out infinite;
+    animation-delay: .35s;
+  }
+
+  /* Gentle float (doesn't distract) */
+  .ldx-logo{
+    animation: ldx-float 4.2s ease-in-out infinite;
+  }
+
+  /* If user prefers reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .ldx-logo, .ldx-logo__mark, .ldx-logo__dot{ animation: none !important; }
+    .ldx-logo__mark{ stroke-dashoffset: 0; }
+    .ldx-logo__dot{ opacity: .45; }
+  }
+
+  @keyframes ldx-draw{
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes ldx-pulse{
+    0%, 100% { transform: scale(1); opacity: .25; }
+    50% { transform: scale(1.25); opacity: .7; }
+  }
+  @keyframes ldx-float{
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+
+  /* Dark hero support (if placed on dark bg, frame becomes glassy) */
+  :global(.bg-slate-950) .ldx-logo__frame{
+    stroke: rgba(255,255,255,.14);
+    fill: rgba(255,255,255,.06);
+  }
+  :global(.bg-slate-950) .ldx-logo__mark{
+    stroke: rgba(255,255,255,.92);
+  }
+</style>
