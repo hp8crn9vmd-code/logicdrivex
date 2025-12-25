@@ -9,6 +9,7 @@ const validOffer = offers.find(o => o.id === selectedId);
 const defaultOffer = validOffer ? validOffer.id : "";
 
 const pageTitle = "Request a Quote — LogicDriveX";
+const base = import.meta.env.BASE_URL;
 
 /**
  * IMPORTANT:
@@ -16,6 +17,9 @@ const pageTitle = "Request a Quote — LogicDriveX";
  * Do NOT hardcode secrets in the repository.
  */
 const accessKey = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY;
+
+// For GitHub Pages (project base path), redirect must be absolute.
+const redirectUrl = `${import.meta.env.SITE ?? ""}${base}thanks/`;
 ---
 <SiteLayout title={pageTitle} lang="en">
   <main class="min-h-screen p-6">
@@ -32,10 +36,10 @@ const accessKey = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY;
       >
         <!-- Web3Forms -->
         <input type="hidden" name="access_key" value={accessKey} />
-        <input type="hidden" name="redirect" value="https://hp8crn9vmd-code.github.io/logicdrivex/thanks/" />
+        <input type="hidden" name="redirect" value={redirectUrl} />
 
         <div>
-          <label class="block font-semibold">Selected offer</label>
+          <label class="block font-semibold">Selected offer <span class="text-red-600">*</span></label>
           <select name="selected_offer" required class="mt-2 w-full rounded border p-2">
             <option value="">-- Select an offer --</option>
             {offers.map(o => (
@@ -53,35 +57,99 @@ const accessKey = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY;
           <textarea
             name="requested_customizations"
             required
-            rows="5"
+            rows="6"
+            placeholder="Describe exactly what you want changed/added. Include references, sections, and any constraints."
             class="mt-2 w-full rounded border p-2"
           ></textarea>
         </div>
 
-        <div>
-          <label class="block font-semibold">
-            Requested price (USD) <span class="text-red-600">*</span>
-          </label>
-          <input type="number" name="requested_price" required min="1"
-                 class="mt-2 w-full rounded border p-2" />
-        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold">
+              Requested price (USD) <span class="text-red-600">*</span>
+            </label>
+            <input
+              type="number"
+              name="requested_price"
+              required
+              min="1"
+              placeholder="e.g. 500"
+              class="mt-2 w-full rounded border p-2"
+            />
+          </div>
 
-        <div>
-          <label class="block font-semibold">Your proposed price (optional)</label>
-          <input type="number" name="client_proposed_price" min="1"
-                 class="mt-2 w-full rounded border p-2" />
+          <div>
+            <label class="block font-semibold">Your proposed price (optional)</label>
+            <input
+              type="number"
+              name="client_proposed_price"
+              min="1"
+              placeholder="e.g. 450"
+              class="mt-2 w-full rounded border p-2"
+            />
+          </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-4">
           <div>
-            <label class="block font-semibold">Name</label>
-            <input type="text" name="name" required
-                   class="mt-2 w-full rounded border p-2" />
+            <label class="block font-semibold">Company / Project (optional)</label>
+            <input
+              type="text"
+              name="company_or_project"
+              placeholder="Company or project name"
+              class="mt-2 w-full rounded border p-2"
+            />
+          </div>
+
+          <div>
+            <label class="block font-semibold">Phone / WhatsApp (optional)</label>
+            <input
+              type="text"
+              name="phone_or_whatsapp"
+              placeholder="+962..."
+              class="mt-2 w-full rounded border p-2"
+            />
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold">Preferred language (optional)</label>
+            <select name="preferred_language" class="mt-2 w-full rounded border p-2">
+              <option value="">-- Choose --</option>
+              <option value="EN">English</option>
+              <option value="AR">Arabic</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold">Desired deadline (optional)</label>
+            <input
+              type="date"
+              name="desired_deadline"
+              class="mt-2 w-full rounded border p-2"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold">Additional notes (optional)</label>
+          <textarea
+            name="additional_notes"
+            rows="4"
+            placeholder="Any links, examples, constraints, or special requirements."
+            class="mt-2 w-full rounded border p-2"
+          ></textarea>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold">Name <span class="text-red-600">*</span></label>
+            <input type="text" name="name" required class="mt-2 w-full rounded border p-2" />
           </div>
           <div>
-            <label class="block font-semibold">Email</label>
-            <input type="email" name="email" required
-                   class="mt-2 w-full rounded border p-2" />
+            <label class="block font-semibold">Email <span class="text-red-600">*</span></label>
+            <input type="email" name="email" required class="mt-2 w-full rounded border p-2" />
           </div>
         </div>
 
@@ -92,6 +160,10 @@ const accessKey = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY;
           Submit request
         </button>
       </form>
+
+      <p class="mt-6 text-sm text-slate-500">
+        We only collect the information needed to evaluate scope and pricing. No marketing claims, no tracking promises.
+      </p>
     </div>
   </main>
 </SiteLayout>
